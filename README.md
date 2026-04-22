@@ -12,4 +12,4 @@ Por seguridad, este código **no incluye** la llave de acceso. Para que el proye
 ### 1. Clonar el repositorio
 Copia el código a tu máquina local:
 ```bash
-git clone [TU_LINK_DE_GITHUB_AQUI]
+git clone https://github.com/aramrdz06/Proyecto-de-recomendaciones
