@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>{{ movie.title }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<!-- ===== TOP BAR ===== -->
+<div class="topbar">
+
+<h2 class="logo">🎬 CineBot</h2>
+
+<form action="/" method="GET" class="search-box">
+<input type="text" name="q" placeholder="Buscar película...">
+<button type="submit">Buscar</button>
+</form>
+
+<a href="/" class="home-btn">🏠 Menú</a>
+
+</div>
+
+
+<div class="container">
+
+<!-- ===== SIDEBAR ===== -->
+<div class="sidebar">
+
+<h2>🎭 Géneros</h2>
+
+{% for g in genres %}
+<a href="/genre/{{ g.id }}">{{ g.name }}</a>
+{% endfor %}
+
+
+</div>
+
+
+<!-- ===== FICHA ===== -->
+<div class="main">
+
+<h1>{{ movie.title }}</h1>
+
+<img class="poster"
+src="https://image.tmdb.org/t/p/w500/{{ movie.poster_path }}">
+
+<p>⭐ {{ movie.vote_average }}</p>
+
+<p>{{ movie.overview }}</p>
+
+
+<h2>Recomendadas</h2>
+
+<div class="row">
+{% for m in similar %}
+<a href="/movie/{{ m.id }}" class="card">
+<img src="https://image.tmdb.org/t/p/w500/{{ m.poster_path }}">
+<p>{{ m.title }}</p>
+</a>
+{% endfor %}
+</div>
+
+</div>
+
+</div>
+
+</body>
+</html>

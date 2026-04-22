@@ -1,0 +1,24 @@
+# Entorno virtual (Archivos muy pesados que no deben subirse)
+venv/
+env/
+Lib/
+bin/
+Include/
+Scripts/
+pyvenv.cfg
+
+# Caché de Python (Archivos temporales)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Configuración y Secretos (¡Aquí está tu API Key!)
+.env
+.flaskenv
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Otros (Si usas editores como VS Code)
+.vscode/

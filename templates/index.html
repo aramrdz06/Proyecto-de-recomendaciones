@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>CineBot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Agregamos un pequeño estilo extra para que la sección de IA resalte */
+        .ai-recommendations {
+            margin-top: 40px;
+            padding: 20px;
+            background: rgba(59, 130, 246, 0.1); /* Un azul muy tenue */
+            border-radius: 10px;
+            border-left: 5px solid #3b82f6;
+        }
+        .ai-title { color: #3b82f6; margin-bottom: 15px; font-size: 1.4em; }
+    </style>
+</head>
+
+<body>
+
+<div class="topbar">
+    <h2 class="logo">🎬 CineBot</h2>
+    <form action="/search" method="GET" class="search-box">
+        <input type="text" name="q" placeholder="Buscar película..." required>
+        <button type="submit">Buscar</button>
+    </form>
+    <a href="/" class="home-btn">🏠 Menú</a>
+</div>
+
+<div class="container">
+
+    <div class="sidebar">
+        <h2>🎭 Géneros</h2>
+        {% for g in genres %}
+            <a href="/genre/{{ g.id }}">{{ g.name }}</a>
+        {% endfor %}
+    </div>
+
+    <div class="main">
+        <h1>{{ title or 'Catálogo' }}</h1>
+
+        <div class="row">
+            {% for m in movies %}
+           <a href="/movie/{{ m.id }}" class="card">
+    {% if m.poster_path %}
+        <img src="https://image.tmdb.org/t/p/w500/{{ m.poster_path }}">
+    {% else %}
+        <img src="https://via.placeholder.com/170x255?text=Sin+imagen">
+    {% endif %}
+    <p>{{ m.title }}</p>
+    <p style="font-size: 12px; color: #888; margin-top: -5px;">
+        {{ m.release_date[:4] if m.release_date else 'S/N' }}
+    </p>
+</a>
+            {% endfor %}
+        </div>
+
+        {% if recommendations %}
+        <div class="ai-recommendations">
+            <h2 class="ai-title">🤖 Recomendaciones de CineBot (IA)</h2>
+            <p style="color: #ccc; margin-bottom: 20px;">
+                Porque te interesó <strong>"{{ main_movie.title }}"</strong>, nuestro algoritmo sugiere:
+            </p>
+            
+            <div class="row">
+                {% for rec in recommendations %}
+                <a href="/movie/{{ rec.id }}" class="card">
+                    {% if rec.poster_path %}
+                        <img src="https://image.tmdb.org/t/p/w500/{{ rec.poster_path }}">
+                    {% else %}
+                        <img src="https://via.placeholder.com/170x255?text=Sin+imagen">
+                    {% endif %}
+                    <p>{{ rec.title }}</p>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div> </div> </body>
+</html>
