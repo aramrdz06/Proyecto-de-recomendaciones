@@ -9,9 +9,13 @@ load_dotenv()
 app = Flask(__name__)
 
 # Configuración Global segura
-API_KEY = os.getenv("TMDB_API_KEY") 
+API_KEY = os.getenv("TMDB_API_KEY")
 BASE_URL = "https://api.themoviedb.org/3"
 LANG = "es-MX"
+TIMEOUT = 10  # segundos máximos de espera por cada llamada a la API
+
+if not API_KEY:
+    print("AVISO: no se encontró TMDB_API_KEY. Crea un archivo .env con tu llave (ver README).")
 
 # Diccionario de géneros para el Sidebar
 IMPORTANT_GENRES = {
@@ -22,34 +26,43 @@ IMPORTANT_GENRES = {
 
 # --- FUNCIONES DE APOYO ---
 
+def tmdb_get(path, **params):
+    """
+    Única función que consulta la API de TMDB.
+    - Agrega la API key y el idioma.
+    - Codifica los parámetros de forma segura (búsquedas con &, acentos, etc.).
+    - Usa timeout y devuelve {} si algo falla, para que la app no se caiga.
+    """
+    params.update({"api_key": API_KEY, "language": LANG})
+    try:
+        response = requests.get(f"{BASE_URL}{path}", params=params, timeout=TIMEOUT)
+        response.raise_for_status()
+        return response.json()
+    except (requests.RequestException, ValueError) as error:
+        # Solo registramos el tipo de error: el mensaje completo incluye la URL con la API key.
+        app.logger.warning("Falló la consulta a TMDB (%s): %s", path, type(error).__name__)
+        return {}
+
 def get_genres():
     """Retorna la lista de géneros para el sidebar"""
     return [{"id": v, "name": k} for k, v in IMPORTANT_GENRES.items()]
 
 def get_popular():
     """Obtiene películas populares y tendencia para el inicio"""
-    url_t = f"{BASE_URL}/trending/movie/week?api_key={API_KEY}&language={LANG}"
-    url_p = f"{BASE_URL}/movie/popular?api_key={API_KEY}&language={LANG}"
-    
-    try:
-        r1 = requests.get(url_t).json().get("results", [])
-        r2 = requests.get(url_p).json().get("results", [])
-        return r1 + r2
-    except:
-        return []
+    tendencia = tmdb_get("/trending/movie/week").get("results", [])
+    populares = tmdb_get("/movie/popular").get("results", [])
+    return tendencia + populares
 
 def search_movies(query):
     """Busca películas por texto"""
-    url = f"{BASE_URL}/search/movie?api_key={API_KEY}&query={query}&language={LANG}"
-    return requests.get(url).json().get("results", [])
+    return tmdb_get("/search/movie", query=query).get("results", [])
 
 def get_recommendations(movie_id):
     """
-    EL MOTOR DE IA: TMDB usa algoritmos de similitud de contenido 
-    y comportamiento de usuarios para estas recomendaciones.
+    Recomendaciones generadas por TMDB (similitud de contenido y
+    comportamiento de usuarios). La app las consulta y las muestra.
     """
-    url = f"{BASE_URL}/movie/{movie_id}/recommendations?api_key={API_KEY}&language={LANG}"
-    return requests.get(url).json().get("results", [])
+    return tmdb_get(f"/movie/{movie_id}/recommendations").get("results", [])
 
 # --- RUTAS DE LA APLICACIÓN ---
 
@@ -64,14 +77,14 @@ def home():
 
 @app.route("/search")
 def search():
-    query = request.args.get("q")
+    query = (request.args.get("q") or "").strip()
     movies = search_movies(query) if query else []
-    
+
     recommendations = []
     main_movie = None
 
     if movies:
-        main_movie = movies[0] 
+        main_movie = movies[0]
         recommendations = get_recommendations(main_movie['id'])
 
     return render_template(
@@ -85,10 +98,9 @@ def search():
 
 @app.route("/genre/<int:genre_id>")
 def genre(genre_id):
-    url = f"{BASE_URL}/discover/movie?api_key={API_KEY}&with_genres={genre_id}&language={LANG}"
-    movies = requests.get(url).json().get("results", [])
+    movies = tmdb_get("/discover/movie", with_genres=genre_id).get("results", [])
     genre_name = next((name for name, id in IMPORTANT_GENRES.items() if id == genre_id), "Género")
-    
+
     return render_template(
         "index.html",
         genres=get_genres(),
@@ -98,8 +110,14 @@ def genre(genre_id):
 
 @app.route("/movie/<int:movie_id>")
 def movie(movie_id):
-    url_m = f"{BASE_URL}/movie/{movie_id}?api_key={API_KEY}&language={LANG}"
-    movie_data = requests.get(url_m).json()
+    movie_data = tmdb_get(f"/movie/{movie_id}")
+    if not movie_data:
+        return (
+            "<p>No pudimos cargar esta película en este momento. Intenta de nuevo más tarde.</p>"
+            "<p><a href='/'>Volver al inicio</a></p>",
+            503
+        )
+
     similar_movies = get_recommendations(movie_id)
 
     return render_template(
